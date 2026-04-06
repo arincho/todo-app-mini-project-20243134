@@ -1,72 +1,66 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// 백엔드 서버 주소
 const API_URL = "http://localhost:5000/api/todos";
 
 function App() {
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState("");
 
-  // 1. [GET] 서버에서 데이터 불러오기
+  // [GET] 목록 불러오기
   const fetchTodos = async () => {
-    try {
-      const response = await axios.get(API_URL);
-      setTodos(response.data);
-    } catch (err) {
-      console.error("데이터 로딩 실패:", err);
-    }
+    const res = await axios.get(API_URL);
+    setTodos(res.data);
   };
 
-  // 앱이 처음 켜질 때 데이터를 가져옴
-  useEffect(() => {
-    fetchTodos();
-  }, []);
+  useEffect(() => { fetchTodos(); }, []);
 
-  // 2. [POST] 데이터 추가하기
+  // [POST] 할 일 추가
   const addTodo = async () => {
     if (!input.trim()) return;
-    try {
-      await axios.post(API_URL, { title: input });
-      setInput("");
-      fetchTodos(); // 추가 후 목록 새로고침
-    } catch (err) {
-      alert("추가 실패! 백엔드 서버를 확인하세요.");
-    }
+    await axios.post(API_URL, { title: input });
+    setInput("");
+    fetchTodos();
   };
 
-  // 3. [DELETE] 데이터 삭제하기
+  // [PUT] 완료 여부 체크 (토글)
+  const toggleTodo = async (id, completed) => {
+    await axios.put(`${API_URL}/${id}`, { completed: !completed });
+    fetchTodos();
+  };
+
+  // [DELETE] 삭제
   const deleteTodo = async (id) => {
-    try {
-      await axios.delete(`${API_URL}/${id}`);
-      fetchTodos(); // 삭제 후 목록 새로고침
-    } catch (err) {
-      console.error("삭제 실패:", err);
-    }
+    await axios.delete(`${API_URL}/${id}`);
+    fetchTodos();
   };
 
   return (
-    <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h1>My Todo List (Real DB)</h1>
+    <div className="min-h-screen bg-gray-100 p-10 flex flex-col items-center">
+      <h1 className="text-4xl font-bold text-blue-600 mb-8">My Todo List</h1>
       
-      <div style={{ marginBottom: '20px' }}>
+      <div className="flex gap-2 mb-8 w-full max-w-md">
         <input 
+          className="flex-1 p-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 outline-none"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="할 일을 입력하세요"
+          placeholder="할 일을 입력하세요..."
           onKeyPress={(e) => e.key === 'Enter' && addTodo()}
         />
-        <button onClick={addTodo}>추가</button>
+        <button onClick={addTodo} className="bg-blue-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-600">추가</button>
       </div>
 
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      <div className="w-full max-w-md space-y-3">
         {todos.map(todo => (
-          <li key={todo._id} style={{ marginBottom: '10px', borderBottom: '1:px solid #eee', padding: '5px' }}>
-            {todo.title}
-            <button onClick={() => deleteTodo(todo._id)} style={{ marginLeft: '10px', color: 'red' }}>삭제</button>
-          </li>
+          <div key={todo._id} className="bg-white p-4 rounded-xl shadow-md flex justify-between items-center group">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => toggleTodo(todo._id, todo.completed)}>
+              <input type="checkbox" checked={todo.completed} readOnly className="w-5 h-5 accent-blue-500" />
+              <span className={`text-lg ${todo.completed ? "line-through text-gray-400" : "text-gray-700"}`}>{todo.title}</span>
+            </div>
+            <button onClick={() => deleteTodo(todo._id)} className="text-red-400 hover:text-red-600 font-bold opacity-0 group-hover:opacity-100 transition">삭제</button>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
